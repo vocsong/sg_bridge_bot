@@ -319,6 +319,20 @@ function showLastTrick() {
 }
 
 // --- Render based on full state ---
+function statusDot(connected) {
+  return `<span class="status-dot ${connected ? 'online' : 'offline'}"></span>`;
+}
+
+function renderPlayerStatusBar(container, players) {
+  container.innerHTML = '';
+  for (const p of players) {
+    const item = document.createElement('span');
+    item.className = 'player-status-chip';
+    item.innerHTML = `${statusDot(p.connected)}${esc(p.name)}`;
+    container.appendChild(item);
+  }
+}
+
 function renderState() {
   const s = gameState;
   if (!s) return;
@@ -355,7 +369,7 @@ function renderLobby(s) {
   for (const p of s.players) {
     const item = document.createElement('div');
     item.className = 'player-item';
-    item.innerHTML = `<span class="seat-num">${p.seat + 1}</span><span>${esc(p.name)}</span>`;
+    item.innerHTML = `<span class="seat-num">${p.seat + 1}</span>${statusDot(p.connected)}<span>${esc(p.name)}</span>`;
     list.appendChild(item);
   }
   const remaining = NUM_PLAYERS - s.players.length;
@@ -366,6 +380,7 @@ function renderLobby(s) {
 
 // --- Bidding ---
 function renderBidding(s) {
+  renderPlayerStatusBar($('bidding-players'), s.players);
   const isMyTurn = s.turn === s.mySeat;
   $('bid-status').textContent = isMyTurn
     ? "It's your turn to bid!"
@@ -398,6 +413,7 @@ function renderBidding(s) {
 
 // --- Partner selection ---
 function renderPartner(s) {
+  renderPlayerStatusBar($('partner-players'), s.players);
   const isBidder = s.mySeat === s.bidder;
   $('partner-title').textContent = isBidder ? 'Select Partner Card' : 'Partner Selection';
   $('partner-status').textContent = isBidder
@@ -451,7 +467,7 @@ function renderPlay(s) {
     if (player) {
       let text = player.name;
       if (seat === s.bidder) text += ' ★';
-      label.textContent = text;
+      label.innerHTML = `${statusDot(player.connected)}${esc(text)}`;
       label.className = 'seat-label';
       if (seat === s.turn) label.classList.add('active-turn');
       if (!player.connected) label.classList.add('disconnected');
@@ -530,6 +546,7 @@ function getValidSuitsClient(hand, trumpSuit, currentSuit, trumpBroken) {
 
 // --- Game Over ---
 function renderGameOver(s) {
+  renderPlayerStatusBar($('gameover-players'), s.players);
   const title = $('gameover-title');
   const detail = $('gameover-detail');
   const scores = $('gameover-scores');
