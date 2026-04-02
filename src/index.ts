@@ -1,6 +1,6 @@
 import type { Env } from './types';
 import { verifyTelegramAuth, signJwt, verifyJwt } from './auth';
-import { upsertUser, getUser, updateDisplayName } from './db';
+import { upsertUser, getUser, updateDisplayName, getLeaderboard } from './db';
 
 export { GameRoom } from './game-room';
 
@@ -65,6 +65,14 @@ export default {
       if (!name) return Response.json({ error: 'displayName required' }, { status: 400 });
       await updateDisplayName(env.DB, Number(claims.sub), name);
       return new Response(null, { status: 204 });
+    }
+
+    // Get leaderboard (optionally with authenticated user's rank)
+    if (url.pathname === '/api/leaderboard' && request.method === 'GET') {
+      const claims = await getAuthClaims(request, env.JWT_SECRET).catch(() => null);
+      const telegramId = claims ? Number(claims.sub) : undefined;
+      const data = await getLeaderboard(env.DB, telegramId);
+      return Response.json(data);
     }
 
     if (url.pathname === '/api/create' && request.method === 'POST') {
