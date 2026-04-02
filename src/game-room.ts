@@ -612,6 +612,8 @@ export class GameRoom extends DurableObject {
           bidderWon: true,
           winnerNames,
         });
+        // TODO: record game result for stats/leaderboards when implemented
+        // Example: await recordGameResult(env, state.players, { bidderWon, winnerNames })
 
         await this.saveState(state);
         this.broadcastFullState(state);
@@ -629,6 +631,8 @@ export class GameRoom extends DurableObject {
           bidderWon: false,
           winnerNames,
         });
+        // TODO: record game result for stats/leaderboards when implemented
+        // Example: await recordGameResult(env, state.players, { bidderWon, winnerNames })
 
         await this.saveState(state);
         this.broadcastFullState(state);
