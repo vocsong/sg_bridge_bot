@@ -48,3 +48,66 @@ export async function updateDisplayName(
     .bind(displayName, telegramId)
     .run();
 }
+
+export interface LeaderboardEntry {
+  rank: number;
+  displayName: string;
+  wins: number;
+  gamesPlayed: number;
+}
+
+/**
+ * Returns top 5 players by wins (min 1 game played) + optionally the caller's rank.
+ * If telegramId is provided and not in top 5, their rank is returned separately.
+ */
+export async function getLeaderboard(
+  db: D1Database,
+  telegramId?: number,
+): Promise<{ top: LeaderboardEntry[]; me: (LeaderboardEntry & { telegramId: number }) | null }> {
+  const topRows = await db
+    .prepare(
+      `SELECT display_name, wins, games_played,
+              RANK() OVER (ORDER BY wins DESC) AS rank
+       FROM users
+       WHERE games_played > 0
+       ORDER BY wins DESC
+       LIMIT 5`,
+    )
+    .all<{ display_name: string; wins: number; games_played: number; rank: number }>();
+
+  const top: LeaderboardEntry[] = (topRows.results ?? []).map((r) => ({
+    rank: r.rank,
+    displayName: r.display_name,
+    wins: r.wins,
+    gamesPlayed: r.games_played,
+  }));
+
+  if (!telegramId) return { top, me: null };
+
+  // Get caller's stats
+  const meRow = await db
+    .prepare(
+      `SELECT display_name, wins, games_played,
+              (SELECT COUNT(*) + 1 FROM users WHERE wins > u.wins) AS rank
+       FROM users u
+       WHERE telegram_id = ?`,
+    )
+    .bind(telegramId)
+    .first<{ display_name: string; wins: number; games_played: number; rank: number }>();
+
+  if (!meRow || meRow.games_played === 0) return { top, me: null };
+
+  // Suppress me row if already in top 5 (rank <= 5)
+  if (meRow.rank <= 5) return { top, me: null };
+
+  return {
+    top,
+    me: {
+      rank: meRow.rank,
+      displayName: meRow.display_name,
+      wins: meRow.wins,
+      gamesPlayed: meRow.games_played,
+      telegramId,
+    },
+  };
+}
