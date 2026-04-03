@@ -190,6 +190,7 @@ export class GameRoom extends DurableObject {
       trickComplete: false,
       bidHistory: [],
       spectators: [],
+      firstBidder: 0,
     };
   }
 
@@ -420,7 +421,7 @@ export class GameRoom extends DurableObject {
     if (state.passCount === NUM_PLAYERS && state.bidder < 0) {
       // All passed without any bid -- redeal
       state.hands = generateHands();
-      state.turn = 0;
+      state.turn = state.firstBidder;
       state.bid = -1;
       state.bidder = -1;
       state.passCount = 0;
@@ -444,7 +445,7 @@ export class GameRoom extends DurableObject {
     if (state.bidder < 0) {
       // Everyone passed with no bid -- redeal
       state.hands = generateHands();
-      state.turn = 0;
+      state.turn = state.firstBidder;
       state.bid = -1;
       state.bidder = -1;
       state.passCount = 0;
@@ -702,9 +703,13 @@ export class GameRoom extends DurableObject {
   ): Promise<void> {
     if (state.phase !== 'gameover') return;
 
+    const otherSeats = [0, 1, 2, 3].filter((s) => s !== state.firstBidder);
+    const nextFirstBidder = otherSeats[Math.floor(Math.random() * otherSeats.length)];
+
     state.phase = 'bidding';
     state.hands = generateHands();
-    state.turn = 0;
+    state.turn = nextFirstBidder;
+    state.firstBidder = nextFirstBidder;
     state.bidder = -1;
     state.bid = -1;
     state.trumpSuit = null;

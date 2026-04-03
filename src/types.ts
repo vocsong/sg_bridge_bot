@@ -56,6 +56,7 @@ export interface GameState {
   trickComplete: boolean;
   bidHistory: BidHistoryEntry[];
   spectators: Spectator[];
+  firstBidder: number;
 }
 
 export interface PlayerGameView {
