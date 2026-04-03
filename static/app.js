@@ -301,6 +301,35 @@ function getAudioCtx() {
   return audioCtx;
 }
 
+function playBidSound(delay = 0) {
+  try {
+    const ctx = getAudioCtx();
+    // Hammer slam: low thud with quick attack
+    const bufSize = ctx.sampleRate * 0.12;
+    const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < bufSize; i++) {
+      const t = i / ctx.sampleRate;
+      // Low-frequency thud (80Hz) + noise burst, fast decay
+      data[i] = (Math.sin(2 * Math.PI * 80 * t) * 0.6 + (Math.random() * 2 - 1) * 0.4)
+        * Math.pow(1 - i / bufSize, 4);
+    }
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = 400;
+    const gain = ctx.createGain();
+    const t0 = ctx.currentTime + delay;
+    gain.gain.setValueAtTime(0.7, t0);
+    gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.12);
+    src.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+    src.start(t0);
+  } catch {}
+}
+
 function playCardSound() {
   try {
     const ctx = getAudioCtx();
@@ -398,8 +427,13 @@ function handleMessage(msg) {
     case 'joined':
       break;
     case 'gameStart':
+      playBidSound(0);
+      playBidSound(0.18);
+      playBidSound(0.36);
       break;
     case 'bidMade':
+      playBidSound();
+      break;
     case 'passed':
       break;
     case 'bidWon':
@@ -412,6 +446,9 @@ function handleMessage(msg) {
       showPartnerNotification(msg.bidderName);
       break;
     case 'playPhaseStart':
+      break;
+    case 'bidMade':
+      playBidSound();
       break;
     case 'cardPlayed':
       playCardSound();
@@ -721,7 +758,8 @@ function renderPlay(s) {
     if (player) {
       let text = player.name;
       if (seat === s.bidder) text += ' ★';
-      label.innerHTML = `${statusDot(player.connected)}${esc(text)}`;
+      const sets = s.sets?.[seat] ?? 0;
+      label.innerHTML = `${statusDot(player.connected)}${esc(text)}<span class="seat-sets">${sets}</span>`;
       label.className = 'seat-label';
       if (seat === s.turn) label.classList.add('active-turn');
       if (!player.connected) label.classList.add('disconnected');
@@ -747,15 +785,9 @@ function renderPlay(s) {
     trickArea.appendChild(wrapper);
   }
 
-  // Sets display
+  // Sets display (only Last Trick button — per-player sets shown on seat labels)
   const setsDiv = $('sets-display');
   setsDiv.innerHTML = '';
-  for (let i = 0; i < s.players.length; i++) {
-    const item = document.createElement('span');
-    item.className = `set-item${i === s.mySeat ? ' is-me' : ''}`;
-    item.textContent = `${s.players[i].name}: ${s.sets[i]}`;
-    setsDiv.appendChild(item);
-  }
   if (s.lastTrick && !s.trickComplete) {
     const ltBtn = document.createElement('button');
     ltBtn.className = 'btn-last-trick';
