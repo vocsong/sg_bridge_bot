@@ -533,6 +533,17 @@ function renderBidding(s) {
     $('bid-current').textContent = 'No bids yet';
   }
 
+  const histEl = $('bid-history');
+  if (histEl && s.bidHistory && s.bidHistory.length > 0) {
+    histEl.innerHTML = s.bidHistory.slice().reverse().map(e =>
+      e.bidNum === null
+        ? `<div class="bid-hist-row bid-hist-pass"><span class="bid-hist-name">${esc(e.name)}</span><span class="bid-hist-val">Pass</span></div>`
+        : `<div class="bid-hist-row"><span class="bid-hist-name">${esc(e.name)}</span><span class="bid-hist-val">${getBidFromNum(e.bidNum)}</span></div>`
+    ).join('');
+  } else if (histEl) {
+    histEl.innerHTML = '';
+  }
+
   const grid = $('bid-grid');
   grid.innerHTML = '';
   for (let level = 1; level <= 7; level++) {

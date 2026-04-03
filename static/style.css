@@ -353,6 +353,24 @@ html, body {
   font-size: 0.85rem; color: var(--accent-light);
   margin-top: 0.3rem; font-weight: 500;
 }
+#bid-history {
+  margin-top: 0.5rem;
+  max-height: 8rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.bid-hist-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+.bid-hist-name { color: var(--text-dim); }
+.bid-hist-val { color: var(--accent-light); font-weight: 600; }
+.bid-hist-pass .bid-hist-val { color: var(--text-dimmer); font-weight: 400; }
 .bid-grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
@@ -574,7 +592,7 @@ html, body {
   cursor: pointer;
   transition: transform var(--transition), box-shadow var(--transition), margin-top var(--transition);
   font-weight: 700;
-  font-size: clamp(0.6rem, 2.5vw, 0.85rem);
+  font-size: clamp(1.2rem, 5vw, 1.7rem);
   box-shadow: 0 2px 8px rgba(0,0,0,0.2);
   user-select: none;
   position: relative;
@@ -604,7 +622,7 @@ html, body {
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
   font-weight: 700;
-  font-size: clamp(0.5rem, 1.8vw, 0.65rem);
+  font-size: clamp(1.0rem, 3.6vw, 1.3rem);
   box-shadow: 0 2px 8px rgba(0,0,0,0.25);
   line-height: 1.1;
 }

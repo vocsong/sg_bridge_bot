@@ -22,6 +22,12 @@ export interface TrickRecord {
   winner: number;
 }
 
+export interface BidHistoryEntry {
+  seat: number;
+  name: string;
+  bidNum: number | null; // null = pass
+}
+
 export interface GameState {
   roomCode: string;
   phase: GamePhase;
@@ -42,6 +48,7 @@ export interface GameState {
   passCount: number;
   lastTrick: TrickRecord | null;
   trickComplete: boolean;
+  bidHistory: BidHistoryEntry[];
 }
 
 export interface PlayerGameView {
@@ -64,6 +71,7 @@ export interface PlayerGameView {
   mySeat: number;
   lastTrick: TrickRecord | null;
   trickComplete: boolean;
+  bidHistory: BidHistoryEntry[];
 }
 
 export interface Env {

@@ -1,5 +1,5 @@
 import { DurableObject } from 'cloudflare:workers';
-import type { GameState, PlayerGameView, Suit, Hand, Env, TrickRecord } from './types';
+import type { GameState, PlayerGameView, Suit, Hand, Env, TrickRecord, BidHistoryEntry } from './types';
 import { NUM_PLAYERS, MAX_BID, CARD_SUITS } from './types';
 import { generateHands, getBidFromNum, getNumFromBid, getValidSuits, compareCards } from './bridge';
 import type { ClientMessage, ServerMessage } from './protocol';
@@ -185,6 +185,7 @@ export class GameRoom extends DurableObject {
       passCount: 0,
       lastTrick: null,
       trickComplete: false,
+      bidHistory: [],
     };
   }
 
@@ -224,6 +225,7 @@ export class GameRoom extends DurableObject {
       mySeat,
       lastTrick: state.lastTrick,
       trickComplete: state.trickComplete,
+      bidHistory: state.bidHistory,
     };
     return { type: 'state', state: view };
   }
@@ -359,6 +361,7 @@ export class GameRoom extends DurableObject {
     state.setsNeeded = parseInt(parts[0], 10) + 6;
     state.bidder = seat;
     state.passCount = 0;
+    state.bidHistory.push({ seat, name: state.players[seat].name, bidNum });
 
     this.broadcast({
       type: 'bidMade',
@@ -384,6 +387,7 @@ export class GameRoom extends DurableObject {
     if (seat !== state.turn) return;
 
     state.passCount++;
+    state.bidHistory.push({ seat, name: state.players[seat].name, bidNum: null });
 
     this.broadcast({
       type: 'passed',
@@ -400,6 +404,7 @@ export class GameRoom extends DurableObject {
       state.bid = -1;
       state.bidder = -1;
       state.passCount = 0;
+      state.bidHistory = [];
       await this.saveState(state);
 
       this.broadcast({ type: 'allPassed' });
@@ -423,6 +428,7 @@ export class GameRoom extends DurableObject {
       state.bid = -1;
       state.bidder = -1;
       state.passCount = 0;
+      state.bidHistory = [];
       await this.saveState(state);
 
       this.broadcast({ type: 'allPassed' });
