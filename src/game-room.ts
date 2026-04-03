@@ -66,6 +66,7 @@ export class GameRoom extends DurableObject {
         const player = state.players.find((p) => p.id === playerId);
         if (player) {
           player.connected = true;
+          await this.refreshPlayerStats(player, playerId);
           await this.saveState(state);
           this.broadcastExcept(
             { type: 'playerReconnected', seat: player.seat, name: player.name },
@@ -292,6 +293,19 @@ export class GameRoom extends DurableObject {
     }
   }
 
+  private async refreshPlayerStats(player: import('./types').Player, playerId: string): Promise<void> {
+    if (!playerId.startsWith('tg_')) return;
+    const telegramId = Number(playerId.slice(3));
+    const userRow = await getUser((this.env as Env).DB, telegramId).catch(() => null);
+    if (userRow && userRow.games_played > 0) {
+      player.wins = userRow.wins;
+      player.gamesPlayed = userRow.games_played;
+    } else {
+      player.wins = undefined;
+      player.gamesPlayed = undefined;
+    }
+  }
+
   private getSeatPlayer(state: GameState, playerId: string): number {
     const p = state.players.find((pl) => pl.id === playerId);
     return p ? p.seat : -1;
@@ -309,6 +323,7 @@ export class GameRoom extends DurableObject {
     if (existing) {
       existing.name = name;
       existing.connected = true;
+      await this.refreshPlayerStats(existing, playerId);
       await this.saveState(state);
       ws.send(JSON.stringify(this.buildStateMessage(state, playerId)));
       this.broadcastExcept(
@@ -340,17 +355,9 @@ export class GameRoom extends DurableObject {
     }
 
     const seat = state.players.length;
-    let wins: number | undefined;
-    let gamesPlayed: number | undefined;
-    if (playerId.startsWith('tg_')) {
-      const telegramId = Number(playerId.slice(3));
-      const userRow = await getUser((this.env as Env).DB, telegramId).catch(() => null);
-      if (userRow && userRow.games_played > 0) {
-        wins = userRow.wins;
-        gamesPlayed = userRow.games_played;
-      }
-    }
-    state.players.push({ id: playerId, name, seat, connected: true, wins, gamesPlayed });
+    const newPlayer = { id: playerId, name, seat, connected: true } as import('./types').Player;
+    await this.refreshPlayerStats(newPlayer, playerId);
+    state.players.push(newPlayer);
 
     this.broadcast({
       type: 'joined',
